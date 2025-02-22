@@ -158,7 +158,12 @@ class AlertMonitor:
         )
 
         # Subscribe to all sensor topics
-        self.consumer.subscribe(pattern="sensor.*")
+        self.consumer.subscribe([
+            "sensor.temperature",
+            "sensor.humidity",
+            "sensor.light",
+            "sensor.motion"
+        ])
 
         # Alert thresholds
         self.thresholds = {
@@ -231,7 +236,12 @@ class DataAggregator:
             auto_offset_reset="latest",
         )
 
-        self.consumer.subscribe(pattern="sensor.*")
+        self.consumer.subscribe([
+            "sensor.temperature",
+            "sensor.humidity",
+            "sensor.light",
+            "sensor.motion"
+        ])
         self.readings = {"temperature": [], "humidity": [], "light": [], "motion": []}
 
     def calculate_statistics(self):
@@ -275,6 +285,10 @@ def main():
     alert_thread = threading.Thread(target=alert_monitor.run)
     aggregator_thread = threading.Thread(target=aggregator.run)
 
+    network_thread.daemon = True
+    alert_thread.daemon = True
+    aggregator_thread.daemon = True
+
     try:
         print("Starting IoT Sensor Network...")
         network_thread.start()
@@ -283,10 +297,8 @@ def main():
         print("Starting Data Aggregator...")
         aggregator_thread.start()
 
-        # Wait for all threads to complete
-        network_thread.join()
-        alert_thread.join()
-        aggregator_thread.join()
+        while True:
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print("Shutting down all components...")
